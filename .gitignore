@@ -10,8 +10,6 @@ Source/JsonAsAsset/Private/Importers/Types/Cascade/*
 # Blueprint Importing is not finalized ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Source/JsonAsAsset/Public/Importers/Constructor/Blueprint/*
 Source/JsonAsAsset/Private/Importers/Constructor/Blueprint/*
-Source/JsonAsAsset/Private/Importers/Types/Blueprint/*
-Source/JsonAsAsset/Public/Importers/Types/Blueprint/*
 
 # VS Code Settings
 .vscode/settings.json
