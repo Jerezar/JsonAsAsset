@@ -86,7 +86,7 @@ bool IBlueprintImporter::Import() {
 
 
 		UClass* ParentClass = nullptr;
-		if (AssetData->HasField("SuperStruct")) {
+		if (AssetData->HasTypedField<EJson::Object>("SuperStruct")) {
 			const TSharedPtr<FJsonObject> SuperStruct = AssetData->GetObjectField("SuperStruct");
 			ParentClass = LoadClass(SuperStruct);
 
@@ -96,7 +96,7 @@ bool IBlueprintImporter::Import() {
 				return false;
 			}
 		}
-		else if (AssetData->HasField("Super")) {
+		else if (AssetData->HasTypedField<EJson::Object>("Super")) {
 			const TSharedPtr<FJsonObject> SuperClass = AssetData->GetObjectField("Super");
 			ParentClass = LoadClass(SuperClass);
 
@@ -117,7 +117,7 @@ bool IBlueprintImporter::Import() {
 
 	if (!Blueprint) return false;
 
-	if (AssetData->HasField("Interfaces")) {
+	if (AssetData->HasTypedField<EJson::Array>("Interfaces")) {
 		if (Blueprint->ImplementedInterfaces.Num()) {
 			UE_LOG(LogJson, Warning, TEXT("Clearing existing Interfaces."));
 			Blueprint->ImplementedInterfaces.Empty();
@@ -148,7 +148,7 @@ bool IBlueprintImporter::Import() {
 		}
 	}
 
-	if (AssetData->HasField("SimpleConstructionScript")) {
+	if (AssetData->HasTypedField<EJson::Object>("SimpleConstructionScript")) {
 
 		TArray<USCS_Node*> ExistingNodes = Blueprint->SimpleConstructionScript->GetAllNodes();
 		if (ExistingNodes.Num()) {
@@ -167,7 +167,7 @@ bool IBlueprintImporter::Import() {
 		}
 	}
 
-	if (AssetData->HasField("Timelines")) {
+	if (AssetData->HasTypedField<EJson::Array>("Timelines")) {
 		UE_LOG(LogJson, Log, TEXT("Adding timeline components."));
 		for (const TSharedPtr<FJsonValue> TimelinePathData : AssetData->GetArrayField("Timelines")) {
 			const TSharedPtr<FJsonObject> TimelinePath = TimelinePathData->AsObject();
@@ -178,7 +178,7 @@ bool IBlueprintImporter::Import() {
 		}
 	}
 
-	if (AssetData->HasField("DynamicBindingObjects")) {
+	if (AssetData->HasTypedField<EJson::Array>("DynamicBindingObjects")) {
 		for (const TSharedPtr<FJsonValue> DynBindingObjectPathItem : AssetData->GetArrayField("DynamicBindingObjects")) {
 			const TSharedPtr<FJsonObject> DynBindingObjectPath = DynBindingObjectPathItem->AsObject();
 			const TSharedPtr<FJsonValue> DynBindingObjectExport = GetExportByObjectPath(DynBindingObjectPath);
@@ -197,7 +197,7 @@ bool IBlueprintImporter::Import() {
 		Blueprint->DelegateSignatureGraphs.Empty();
 	}
 
-	if (AssetData->HasField("ChildProperties")) {
+	if (AssetData->HasTypedField<EJson::Array>("ChildProperties")) {
 		if (Blueprint->NewVariables.Num()) {
 			UE_LOG(LogJson, Log, TEXT("Clearing existing member variables."));
 			Blueprint->NewVariables.Empty();
@@ -236,7 +236,7 @@ bool IBlueprintImporter::Import() {
 
 			NameToMatch = &ChildVarName;
 			FBPVariableDescription* NewChildVar = Blueprint->NewVariables.FindByPredicate(ChildVarHasName);
-			NewChildVar->RepNotifyFunc = PropertyJson->HasField("RepNotifyFunc") ? FName(PropertyJson->GetStringField("RepNotifyFunc")) : FName("None");
+			NewChildVar->RepNotifyFunc = PropertyJson->HasTypedField<EJson::String>("RepNotifyFunc") ? FName(PropertyJson->GetStringField("RepNotifyFunc")) : FName("None");
 		}
 		if (!bAllPropertySubCatObjectsLoaded) {
 			bFailedImport = true;
@@ -259,7 +259,7 @@ bool IBlueprintImporter::Import() {
 	}
 
 
-	if (AssetData->HasField("Children")) {
+	if (AssetData->HasTypedField<EJson::Array>("Children")) {
 		bool bAllFunctionsAdded = true;
 		UE_LOG(LogJson, Log, TEXT("Adding functions and events"));
 		for (const TSharedPtr<FJsonValue> FunctionExportPathItem : AssetData->GetArrayField("Children")) {
@@ -293,7 +293,7 @@ bool IBlueprintImporter::Import() {
 		}
 	}
 
-	if (AssetData->HasField("ClassDefaultObject")) {
+	if (AssetData->HasTypedField<EJson::Object>("ClassDefaultObject")) {
 		const TSharedPtr<FJsonObject> DefaultObjectPath = AssetData->GetObjectField("ClassDefaultObject");
 		const TSharedPtr<FJsonValue> DefaultObjectItem = GetExportByObjectPath(DefaultObjectPath);
 		const TSharedPtr<FJsonObject> DefaultObject = DefaultObjectItem->AsObject();
@@ -363,7 +363,7 @@ bool IBlueprintImporter::AddTimelineComponent(const TSharedPtr<FJsonObject> Time
 
 	FString TimelineName = TimelineProps->GetStringField("VariableName");
 	FString TimelineGuid = TimelineProps->GetStringField("TimelineGuid");
-	bool bIgnoreTimeDilation = TimelineProps->HasField("bIgnoreTimeDilation") ? TimelineProps->GetBoolField("bIgnoreTimeDilation") : false;
+	bool bIgnoreTimeDilation = TimelineProps->HasTypedField<EJson::Boolean>("bIgnoreTimeDilation") ? TimelineProps->GetBoolField("bIgnoreTimeDilation") : false;
 	float TimelineLength = TimelineProps->GetNumberField("TimelineLength");
 
 	UTimelineTemplate* Timeline = FBlueprintEditorUtils::AddNewTimeline(Blueprint, FName(TimelineName));
@@ -371,22 +371,22 @@ bool IBlueprintImporter::AddTimelineComponent(const TSharedPtr<FJsonObject> Time
 	Timeline->bIgnoreTimeDilation = bIgnoreTimeDilation;
 	Timeline->TimelineLength = TimelineLength;
 
-	if (TimelineProps->HasField("FloatTracks")) {
+	if (TimelineProps->HasTypedField<EJson::Array>("FloatTracks")) {
 		TArray<TSharedPtr<FJsonValue>> FloatTracks = TimelineProps->GetArrayField("FloatTracks");
 		AddTracksToTimeline(Timeline, FloatTracks, FTTTrackBase::ETrackType::TT_FloatInterp);
 	}
 
-	if (TimelineProps->HasField("EventTracks")) {
+	if (TimelineProps->HasTypedField<EJson::Array>("EventTracks")) {
 		TArray<TSharedPtr<FJsonValue>> EventTracks = TimelineProps->GetArrayField("EventTracks");
 		AddTracksToTimeline(Timeline, EventTracks, FTTTrackBase::ETrackType::TT_Event);
 	}
 
-	if (TimelineProps->HasField("VectorTracks")) {
+	if (TimelineProps->HasTypedField<EJson::Array>("VectorTracks")) {
 		TArray<TSharedPtr<FJsonValue>> VectorTracks = TimelineProps->GetArrayField("VectorTracks");
 		AddTracksToTimeline(Timeline, VectorTracks, FTTTrackBase::ETrackType::TT_VectorInterp);
 	}
 
-	if (TimelineProps->HasField("LinearColorTracks")) {
+	if (TimelineProps->HasTypedField<EJson::Array>("LinearColorTracks")) {
 		TArray<TSharedPtr<FJsonValue>> LinearColorTracks = TimelineProps->GetArrayField("LinearColorTracks");
 		AddTracksToTimeline(Timeline, LinearColorTracks, FTTTrackBase::ETrackType::TT_LinearColorInterp);
 	}
@@ -448,7 +448,7 @@ bool IBlueprintImporter::SetupSimpleConstructionScript(const TSharedPtr<FJsonVal
 
 	const TSharedPtr<FJsonObject> SCS_Properties = SCSItem->GetObjectField("Properties");
 
-	if (SCS_Properties->HasField("RootNodes")) {
+	if (SCS_Properties->HasTypedField<EJson::Array>("RootNodes")) {
 		UE_LOG(LogJson, Log, TEXT("Iterating over SCS Root Nodes"));
 		bool bAnyNodeFailed = false;
 		for (const TSharedPtr<FJsonValue> NodePathExport : SCS_Properties->GetArrayField("RootNodes")) {
@@ -479,8 +479,8 @@ USCS_Node* IBlueprintImporter::CreateNodeFromNodeItem(const TSharedPtr<FJsonObje
 
 	FString VariableName = NodeProperties->GetStringField("InternalVariableName");
 	FString VariableGuid = NodeProperties->GetStringField("VariableGuid");
-	FString ParentComponent = NodeProperties->HasField("ParentComponentOrVariableName") ? NodeProperties->GetStringField("ParentComponentOrVariableName") : "None";
-	bool bParentNative = NodeProperties->HasField("bIsParentComponentNative") ? NodeProperties->GetBoolField("bIsParentComponentNative") : false;
+	FString ParentComponent = NodeProperties->HasTypedField<EJson::String>("ParentComponentOrVariableName") ? NodeProperties->GetStringField("ParentComponentOrVariableName") : "None";
+	bool bParentNative = NodeProperties->HasTypedField<EJson::Boolean>("bIsParentComponentNative") ? NodeProperties->GetBoolField("bIsParentComponentNative") : false;
 
 	const TSharedPtr<FJsonObject> ComponentClass = NodeProperties->GetObjectField("ComponentClass");
 
@@ -504,7 +504,7 @@ USCS_Node* IBlueprintImporter::CreateNodeFromNodeItem(const TSharedPtr<FJsonObje
 		SCSInstance->AddNode(CreatedNode);
 	}
 
-	if (NodeProperties->HasField("ChildNodes")) {
+	if (NodeProperties->HasTypedField<EJson::Array>("ChildNodes")) {
 		bool bAnyNodeFailed = false;
 		for (const TSharedPtr<FJsonValue> NodePathExport : NodeProperties->GetArrayField("ChildNodes")) {
 			const TSharedPtr<FJsonObject> NodePathItem = NodePathExport->AsObject();
@@ -617,7 +617,7 @@ FEdGraphPinType IBlueprintImporter::GetPinTypeFromPropertyItem(const TSharedPtr<
 	const FString* SubCatObjectFieldEntry = SubCategoryObjectKeysByTypeName.Find(InnerPropertyType);
 	if (SubCatObjectFieldEntry) {
 		FString SubCatObjectField = *SubCatObjectFieldEntry;
-		if (InnermostType->HasField(SubCatObjectField)) {
+		if (InnermostType->HasTypedField<EJson::Object>(SubCatObjectField)) {
 			const TSharedPtr<FJsonObject> SubCatObjectItem = InnermostType->GetObjectField(SubCatObjectField);
 
 			UObject* SubCatObjectClass = LoadClass(SubCatObjectItem);
@@ -647,7 +647,7 @@ FEdGraphPinType IBlueprintImporter::GetPinTypeFromPropertyItem(const TSharedPtr<
 
 		OutPinType.PinSubCategoryObject = SubCatObjectClass;
 	}
-	else if (EnumPropertyTypeNames.Contains(InnerPropertyType) && InnermostType->HasField("Enum")) {
+	else if (EnumPropertyTypeNames.Contains(InnerPropertyType) && InnermostType->HasTypedField<EJson::Object>("Enum")) {
 		if (InnerPropertyType == "EnumProperty") {
 			OutPinType.PinCategory = UEdGraphSchema_K2::PC_Byte;
 		}
@@ -916,7 +916,7 @@ bool IBlueprintImporter::AddEventToEventGraph(const TSharedPtr<FJsonObject> Func
 
 		bool bAllPropertySubCatObjectsLoaded = true;
 
-		if (FunctionExport->HasField("ChildProperties")) {
+		if (FunctionExport->HasTypedField<EJson::Object>("ChildProperties")) {
 			for (const TSharedPtr<FJsonValue> PropertyItem : FunctionExport->GetArrayField("ChildProperties")) {
 				const TSharedPtr<FJsonObject> PropertyData = PropertyItem->AsObject();
 
@@ -1046,7 +1046,7 @@ bool IBlueprintImporter::AddFunctionGraph(const TSharedPtr<FJsonObject> Function
 			}
 		}
 
-		if (FunctionExport->HasField("ChildProperties")) {
+		if (FunctionExport->HasTypedField<EJson::Array>("ChildProperties")) {
 
 			bool bAllPropertySubCatObjectsLoaded = true;
 			for (const TSharedPtr<FJsonValue> PropertyItem : FunctionExport->GetArrayField("ChildProperties")) {
