@@ -203,11 +203,6 @@ bool IBlueprintImporter::Import() {
 			Blueprint->NewVariables.Empty();
 		}
 
-		FName* NameToMatch = nullptr;
-		auto ChildVarHasName = [&NameToMatch](FBPVariableDescription ChildVar) {
-			return ChildVar.VarName == *NameToMatch;
-		};
-
 		UE_LOG(LogJson, Log, TEXT("Adding member variables."));
 
 		bool bAllPropertySubCatObjectsLoaded = true;
@@ -230,13 +225,28 @@ bool IBlueprintImporter::Import() {
 
 			FName ChildVarName = FName(PropName);
 			FBlueprintEditorUtils::AddMemberVariable(Blueprint, ChildVarName, VarType);
-			uint64* NewPropertyFlags = FBlueprintEditorUtils::GetBlueprintVariablePropertyFlags(Blueprint, ChildVarName);
-			*NewPropertyFlags &= ~RelevantPropertyFlags;
-			*NewPropertyFlags |= GetPropertyFlags(PropertyFlags);
 
-			NameToMatch = &ChildVarName;
-			FBPVariableDescription* NewChildVar = Blueprint->NewVariables.FindByPredicate(ChildVarHasName);
-			NewChildVar->RepNotifyFunc = PropertyJson->HasTypedField<EJson::String>("RepNotifyFunc") ? FName(PropertyJson->GetStringField("RepNotifyFunc")) : FName("None");
+			const int32 VarIndex = FBlueprintEditorUtils::FindNewVariableIndex(Blueprint, ChildVarName);
+
+			if (VarIndex != INDEX_NONE) {
+
+				uint64* NewPropertyFlags = FBlueprintEditorUtils::GetBlueprintVariablePropertyFlags(Blueprint, ChildVarName);
+				*NewPropertyFlags &= ~RelevantPropertyFlags;
+
+				FBlueprintEditorUtils::SetBlueprintOnlyEditableFlag(Blueprint, ChildVarName, PropertyFlags.Contains("DisableEditOnInstance"));
+				FBlueprintEditorUtils::SetBlueprintPropertyReadOnlyFlag(Blueprint, ChildVarName, PropertyFlags.Contains("BlueprintReadOnly"));
+				FBlueprintEditorUtils::SetInterpFlag(Blueprint, ChildVarName, PropertyFlags.Contains("Interp"));
+				FBlueprintEditorUtils::SetVariableTransientFlag(Blueprint, ChildVarName, PropertyFlags.Contains("Transient"));
+				FBlueprintEditorUtils::SetVariableSaveGameFlag(Blueprint, ChildVarName, PropertyFlags.Contains("SaveGame"));
+				FBlueprintEditorUtils::SetVariableAdvancedDisplayFlag(Blueprint, ChildVarName, PropertyFlags.Contains("AdvancedDisplay"));
+				FBlueprintEditorUtils::SetVariableDeprecatedFlag(Blueprint, ChildVarName, PropertyFlags.Contains("Deprecated"));
+
+				*NewPropertyFlags |= GetPropertyFlags(PropertyFlags);
+
+				FBPVariableDescription NewChildVar = Blueprint->NewVariables[VarIndex];
+				NewChildVar.RepNotifyFunc = PropertyJson->HasTypedField<EJson::String>("RepNotifyFunc") ? FName(PropertyJson->GetStringField("RepNotifyFunc")) : FName("None");
+			}
+
 		}
 		if (!bAllPropertySubCatObjectsLoaded) {
 			bFailedImport = true;
