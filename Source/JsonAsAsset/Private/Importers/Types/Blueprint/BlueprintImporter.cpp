@@ -222,7 +222,7 @@ bool IBlueprintImporter::Import() {
 			TArray<FString> PropertyFlags{};
 			GetFlagProperty(PropertyJson, "PropertyFlags", PropertyFlags);
 
-			if (PropertyFlags.Contains("InstancedReference") || PropertyFlags.Contains("Transient")) {
+			if (PropertyFlags.Contains("Transient")) {
 				continue;
 			}
 
@@ -524,6 +524,8 @@ USCS_Node* IBlueprintImporter::CreateNodeFromNodeItem(const TSharedPtr<FJsonObje
 			return nullptr;
 		}
 	}
+
+	GeneratedPropertyNames.Add(VariableName);
 
 	return CreatedNode;
 }
