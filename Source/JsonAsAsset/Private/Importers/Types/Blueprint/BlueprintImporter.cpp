@@ -920,6 +920,8 @@ bool IBlueprintImporter::AddEventToEventGraph(const TSharedPtr<FJsonObject> Func
 
 		EventNode->CustomFunctionName = FName(FuncName);
 
+		EventNode->FunctionFlags = GetFunctionFlags(FunctionFlags);
+
 		OffsetGraphNode(EventNode);
 
 		NodeCreator.Finalize();
@@ -973,14 +975,6 @@ bool IBlueprintImporter::AddFunctionGraph(const TSharedPtr<FJsonObject> Function
 	const UEdGraphSchema* Schema = NewGraph->GetSchema();
 	const UEdGraphSchema_K2* K2Schema = Cast<const UEdGraphSchema_K2>(Schema);
 
-	for (UEdGraphNode* GraphNode : NewGraph->Nodes) {
-		UK2Node_FunctionEntry* EntryNode = Cast< UK2Node_FunctionEntry>(GraphNode);
-
-		if (EntryNode) {
-			EntryNode->SetExtraFlags(GetFunctionFlags(FunctionFlags));
-		}
-	}
-
 	UClass* SignatureFunction = FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, FuncName);
 	
 
@@ -1001,6 +995,17 @@ bool IBlueprintImporter::AddFunctionGraph(const TSharedPtr<FJsonObject> Function
 
 	if (!SignatureFunction) {
 
+		for (UEdGraphNode* GraphNode : NewGraph->Nodes) {
+			UK2Node_FunctionEntry* EntryNode = Cast< UK2Node_FunctionEntry>(GraphNode);
+
+			if (EntryNode) {
+				//UE_LOG(LogJson, Log, TEXT("Setting up function flags: %s"), *FunctionExport->GetStringField("FunctionFlags"));
+				EntryNode->ClearExtraFlags(FUNC_AllFlags);
+				EntryNode->SetExtraFlags(GetFunctionFlags(FunctionFlags));
+				EntryNode->Modify();
+			}
+		}
+
 		//setup parameters
 		UK2Node_FunctionEntry* EntryNode = nullptr;
 		UK2Node_FunctionResult* ExitNode = nullptr;
@@ -1017,9 +1022,6 @@ bool IBlueprintImporter::AddFunctionGraph(const TSharedPtr<FJsonObject> Function
 		{
 			FGraphNodeCreator<UK2Node_FunctionResult> NodeCreator(*NewGraph);
 			ExitNode = NodeCreator.CreateNode();
-
-
-			
 
 			UEdGraphNode* LastExecNode = EntryNode;
 			UEdGraphPin* OutExec = nullptr;
