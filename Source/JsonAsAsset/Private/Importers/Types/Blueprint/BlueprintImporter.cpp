@@ -979,7 +979,8 @@ bool IBlueprintImporter::AddFunctionGraph(const TSharedPtr<FJsonObject> Function
 	const UEdGraphSchema* Schema = NewGraph->GetSchema();
 	const UEdGraphSchema_K2* K2Schema = Cast<const UEdGraphSchema_K2>(Schema);
 
-	UClass* SignatureFunction = FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, FuncName);
+	UFunction* SignatureFunctionObj = nullptr;
+	UClass* SignatureFunction = FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, FuncName, &SignatureFunctionObj);
 	
 
 	if (!bIsDelegateSignature) {
@@ -997,18 +998,20 @@ bool IBlueprintImporter::AddFunctionGraph(const TSharedPtr<FJsonObject> Function
 		FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 	}
 
-	if (!SignatureFunction) {
+	EFunctionFlags ParsedFlags = (SignatureFunctionObj) ? SignatureFunctionObj->FunctionFlags : GetFunctionFlags(FunctionFlags);
 
-		for (UEdGraphNode* GraphNode : NewGraph->Nodes) {
-			UK2Node_FunctionEntry* EntryNode = Cast< UK2Node_FunctionEntry>(GraphNode);
+	for (UEdGraphNode* GraphNode : NewGraph->Nodes) {
+		UK2Node_FunctionEntry* EntryNode = Cast< UK2Node_FunctionEntry>(GraphNode);
 
-			if (EntryNode) {
-				//UE_LOG(LogJson, Log, TEXT("Setting up function flags: %s"), *FunctionExport->GetStringField("FunctionFlags"));
-				EntryNode->ClearExtraFlags(FUNC_AllFlags);
-				EntryNode->SetExtraFlags(GetFunctionFlags(FunctionFlags));
-				EntryNode->Modify();
-			}
+		if (EntryNode) {
+			//UE_LOG(LogJson, Log, TEXT("Setting up function flags: %s"), *FunctionExport->GetStringField("FunctionFlags"));
+			EntryNode->ClearExtraFlags(FUNC_AllFlags);
+			EntryNode->SetExtraFlags(ParsedFlags);
+			EntryNode->Modify();
 		}
+	}
+
+	if (!SignatureFunction) {
 
 		//setup parameters
 		UK2Node_FunctionEntry* EntryNode = nullptr;
