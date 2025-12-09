@@ -79,7 +79,7 @@ bool IBlueprintImporter::Import() {
 	if (!Blueprint) {
 
 		if (FindObject<UBlueprint>(Package, *AssetName, false) != nullptr) {
-			UE_LOG(LogJson, Warning, TEXT("Tried to override existing Blueprint without selecting it."));
+			UE_LOG(LogJson, Warning, TEXT("Tried to override existing Blueprint."));
 			bFailedImport = true;
 			return false;
 		}
@@ -282,7 +282,7 @@ bool IBlueprintImporter::Import() {
 			const TSharedPtr<FJsonObject> FunctionExport = FunctionExportItem->AsObject();
 
 			FString FuncName = FunctionExport->GetStringField("Name");
-			if (GeneratedFunctionNames.Contains(FuncName) || GeneratedFunctionNames.Contains(FuncName)) {
+			if (GeneratedFunctionNames.Contains(FuncName)) {
 				continue;
 			}
 
