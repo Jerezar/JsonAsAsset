@@ -833,43 +833,64 @@ EFunctionFlags IBlueprintImporter::GetFunctionFlags(TArray<FString> Flags) {
 	return Out;
 }
 
+const TArray<FString> BindingArrayFieldNames{
+	"ComponentDelegateBindings",
+	"WidgetAnimationDelegateBindings",
+	"InputActionDelegateBindings",
+	"InputAxisDelegateBindings",
+	"InputAxisKeyDelegateBindings",
+	"InputKeyDelegateBindings",
+	"InputTouchDelegateBindings",
+	"InputActionDelegateBindings",
+	"InputActionValueBindings",
+	"InputDebugKeyDelegateBindings"
+};
+
 bool IBlueprintImporter::SetUpDynamicBindings(const TSharedPtr<FJsonObject> DynamicBindings)
 {
-	UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+	//UEdGraph* EventGraph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
+	const FString BindingType = DynamicBindings->GetStringField("Type");
 	const TSharedPtr<FJsonObject> DynBindingProperties = DynamicBindings->GetObjectField("Properties");
 	bool bAllSuccessful = true;
 
-	for (const TSharedPtr<FJsonValue> Binding : DynBindingProperties->GetArrayField("ComponentDelegateBindings")) {
-		const TSharedPtr<FJsonObject> BindingObject = Binding->AsObject();
-		FString FunctionName = BindingObject->GetStringField("FunctionNameToBind");
+	for (FString BindingArrayField : BindingArrayFieldNames) {
+		if (DynBindingProperties->HasTypedField<EJson::Array>(BindingArrayField)) {
+			for (const TSharedPtr<FJsonValue> Binding : DynBindingProperties->GetArrayField(BindingArrayField)) {
+				const TSharedPtr<FJsonObject> BindingObject = Binding->AsObject();
+				FString FunctionName = BindingObject->GetStringField("FunctionNameToBind");
 
-		GeneratedFunctionNames.Add(FunctionName);
+				GeneratedFunctionNames.Add(FunctionName);
 
-		FString ComponentName = BindingObject->GetStringField("ComponentPropertyName");
-		FString DelegateName = BindingObject->GetStringField("DelegatePropertyName");
+				UE_LOG(LogJson, Log, TEXT("Dynamic binding import not implemented: %s -> %s"), *BindingType, *FunctionName);
 
-		UE_LOG(LogJson, Log, TEXT("Import for component event binding not implemented: %s -> %s"), *ComponentName, *DelegateName);
-		/*
-		UObject* Component = FindObject<UActorComponent>(Blueprint, *FunctionName);
+				/*
+				FString ComponentName = BindingObject->GetStringField("ComponentPropertyName");
+				FString DelegateName = BindingObject->GetStringField("DelegatePropertyName");
 
-		if (!Component) {
-			bAllSuccessful = false;
-			UE_LOG(LogJson, Warning, TEXT("No owner component of name %s for event %s"), *ComponentName, *DelegateName);
-			continue;
+				UE_LOG(LogJson, Log, TEXT("Import for component event binding not implemented: %s -> %s"), *ComponentName, *DelegateName);
+
+				UObject* Component = FindObject<UActorComponent>(Blueprint, *FunctionName);
+
+				if (!Component) {
+					bAllSuccessful = false;
+					UE_LOG(LogJson, Warning, TEXT("No owner component of name %s for event %s"), *ComponentName, *DelegateName);
+					continue;
+				}
+
+				UClass* ComponentClass = Component->GetClass();
+
+				FGraphNodeCreator<UK2Node_ComponentBoundEvent> NodeCreator(*EventGraph);
+				UK2Node_ComponentBoundEvent* EventNode = NodeCreator.CreateNode();
+
+				EventNode->ComponentPropertyName = FName(ComponentName);
+				EventNode->DelegatePropertyName = FName(DelegateName);
+				//EventNode->DelegateOwnerClass = ComponentClass;
+
+				OffsetGraphNode(EventNode);
+				NodeCreator.Finalize();
+				*/
+			}
 		}
-
-		UClass* ComponentClass = Component->GetClass();
-		
-		FGraphNodeCreator<UK2Node_ComponentBoundEvent> NodeCreator(*EventGraph);
-		UK2Node_ComponentBoundEvent* EventNode = NodeCreator.CreateNode();
-
-		EventNode->ComponentPropertyName = FName(ComponentName);
-		EventNode->DelegatePropertyName = FName(DelegateName);
-		//EventNode->DelegateOwnerClass = ComponentClass;
-
-		OffsetGraphNode(EventNode);
-		NodeCreator.Finalize();
-		*/
 	}
 
 	return bAllSuccessful;
