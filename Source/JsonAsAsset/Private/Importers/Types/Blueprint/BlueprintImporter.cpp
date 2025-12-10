@@ -602,6 +602,15 @@ FEdGraphPinType IBlueprintImporter::GetPinTypeFromPropertyItem(const TSharedPtr<
 
 	const FString PropertyType = PropertyItem->GetStringField("Type");
 
+	TArray<FString> PropertyFlags;
+	GetFlagProperty(PropertyItem, "PropertyFlags", PropertyFlags);
+
+	OutPinType.bIsConst = PropertyFlags.Contains("ConstParm");
+	OutPinType.bIsReference = PropertyFlags.Contains("ReferenceParm");
+	OutPinType.bIsUObjectWrapper = PropertyFlags.Contains("UObjectWrapper");
+	//OutPinType.bIsWeakPointer = PropertyFlags.Contains("AutoWeak");
+	//OutPinType.bSerializeAsSinglePrecisionFloat = PropertyFlags.Contains(""); //How to check for this?
+
 	const EPinContainerType* ContainerTypeEntry = PinContainerTypeByTypeName.Find(PropertyType);
 	const EPinContainerType ContainerType = (ContainerTypeEntry) ? *ContainerTypeEntry : EPinContainerType::None;
 	OutPinType.ContainerType = ContainerType;
@@ -909,7 +918,7 @@ bool IBlueprintImporter::AddEventToEventGraph(const TSharedPtr<FJsonObject> Func
 	UFunction* SigFuncObj = nullptr;
 	UClass* SignatureFunction = FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, FuncName, &SigFuncObj);
 
-	if (SignatureFunction && (!UEdGraphSchema_K2::FunctionCanBePlacedAsEvent(SigFuncObj)) || FunctionFlags.Contains("FUNC_HasOutParms")) {
+	if (SignatureFunction && (!UEdGraphSchema_K2::FunctionCanBePlacedAsEvent(SigFuncObj))/* || FunctionFlags.Contains("FUNC_HasOutParms")*/) {
 		UE_LOG(LogJson, Warning, TEXT("Function marked as event, but isn't: %s"), *FuncNameRaw);
 		return AddFunctionGraph(FunctionExport, false);
 	}
