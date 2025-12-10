@@ -964,7 +964,7 @@ bool IBlueprintImporter::AddEventToEventGraph(const TSharedPtr<FJsonObject> Func
 
 		bool bAllPropertySubCatObjectsLoaded = true;
 
-		if (FunctionExport->HasTypedField<EJson::Object>("ChildProperties")) {
+		if (FunctionExport->HasTypedField<EJson::Array>("ChildProperties")) {
 			for (const TSharedPtr<FJsonValue> PropertyItem : FunctionExport->GetArrayField("ChildProperties")) {
 				const TSharedPtr<FJsonObject> PropertyData = PropertyItem->AsObject();
 
